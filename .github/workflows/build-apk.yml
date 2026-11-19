@@ -1,0 +1,141 @@
+name: Build DEV CODE APK
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup Android Build Tools in PATH
+        run: |
+          BUILD_TOOLS_DIR=$(ls -d /usr/local/lib/android/sdk/build-tools/* 2>/dev/null | sort -V | tail -n 1)
+          if [ -n "$BUILD_TOOLS_DIR" ]; then
+            echo "$BUILD_TOOLS_DIR" >> $GITHUB_PATH
+            echo "Added $BUILD_TOOLS_DIR to PATH"
+          fi
+
+      - name: Install dependencies
+        run: |
+          npm install --legacy-peer-deps
+          npm install -g cordova@13
+          npm run setup
+
+      - name: Setup Release Keystore and build.json
+        run: |
+          keytool -genkeypair -v \
+            -keystore release.keystore \
+            -alias devcode \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass devcode123 \
+            -keypass devcode123 \
+            -dname "CN=DEV CODE, OU=Dev, O=DevCode, L=Dhaka, S=Dhaka, C=BD"
+
+          cat << 'EOF' > build.json
+          {
+            "android": {
+              "release": {
+                "keystore": "release.keystore",
+                "storePassword": "devcode123",
+                "alias": "devcode",
+                "password": "devcode123",
+                "keystoreType": ""
+              }
+            }
+          }
+          EOF
+
+      - name: Build Debug APK
+        run: |
+          mkdir -p artifacts
+          echo "Building Debug APK..."
+          npm run build paid dev apk
+          if [ -f platforms/android/app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp platforms/android/app/build/outputs/apk/debug/app-debug.apk artifacts/devcode-debug.apk
+            echo "Debug APK created successfully."
+          else
+            echo "::error::Debug APK not found!"
+            exit 1
+          fi
+
+      - name: Build Release APK
+        run: |
+          echo "Building Release APK..."
+          npm run build paid prod apk
+          if [ -f platforms/android/app/build/outputs/apk/release/app-release.apk ]; then
+            cp platforms/android/app/build/outputs/apk/release/app-release.apk artifacts/devcode-release.apk
+            echo "Signed Release APK created successfully."
+          elif [ -f platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+            echo "Signing unsigned release APK with apksigner..."
+            apksigner sign --ks release.keystore --ks-pass pass:devcode123 --key-pass pass:devcode123 --out artifacts/devcode-release.apk platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk || cp platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk artifacts/devcode-release.apk
+          fi
+
+      - name: Verify Generated Artifacts
+        run: |
+          echo "Generated APK files:"
+          ls -la artifacts/
+          sha256sum artifacts/*.apk
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEV-CODE-APKs
+          path: artifacts/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(grep -oP 'version="\K[0-9.]+' config.xml || echo "1.13.5")
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          TAG="v${VERSION}-${SHORT_SHA}"
+
+          gh release create "$TAG" artifacts/*.apk \
+            --title "DEV CODE v${VERSION} (${SHORT_SHA})" \
+            --notes "## 🚀 DEV CODE Android App Build
+          
+          ### Highlights:
+          - **Debian Bookworm PRoot Terminal**: Powered by Debian with glibc and apt.
+          - **Free Plugin Marketplace**: Full access to free plugins directly from the store.
+          - **Custom Brand & Logos**: DEV CODE branding, refreshed high-res launcher & UI icons, brand-matching dark teal & emerald theme.
+          
+          ### Download:
+          - **\`devcode-release.apk\`** (Recommended): Signed release APK ready for installation.
+          - **\`devcode-debug.apk\`**: Debug build for testing and development." || echo "Release created or already exists"
