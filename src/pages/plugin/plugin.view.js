@@ -399,51 +399,6 @@ async function Buttons(props) {
 		);
 	}
 
-	const user = await auth.getLoggedInUser();
-	if (isPaid && helpers.shouldAllowExternalPurchase() && !user) {
-		const buttonRef = Ref();
-		return (
-			<button
-				ref={buttonRef}
-				data-type="info"
-				className="btn btn-install"
-				onclick={async () => {
-					try {
-						await auth.login();
-						const newButton = await Buttons(props);
-						buttonRef.el.replaceWith(newButton);
-					} catch (error) {
-						helpers.error(error);
-					}
-				}}
-			>
-				<i className="icon user-round"></i>
-				{strings.login}
-			</button>
-		);
-	}
-
-	if (isPaid && !purchased && price) {
-		return (
-			<button data-type="buy" className="btn btn-install" onclick={buy}>
-				<i className="icon cart"></i>
-				{price}
-			</button>
-		);
-	}
-
-	if (isPaid && !purchased && !price) {
-		return (
-			<div style={{ margin: "auto" }} className="flex-center">
-				<span
-					onclick={() => alert(strings.info, strings["no-product-info"])}
-					className="icon info"
-				></span>
-				<span>{strings["product not available"]}</span>
-			</div>
-		);
-	}
-
 	return (
 		<button data-type="install" className="btn btn-install" onclick={install}>
 			<i className="icon save_alt"></i>
@@ -1245,15 +1200,6 @@ function Review({
 	);
 }
 
-function MoreInfo({ purchased, price, refund }) {
-	if (!purchased) return "";
-
-	return (
-		<small className="more-info-small">
-			<span>{strings.owned}</span> • <span>{price}</span> •{" "}
-			<span className="link" onclick={refund}>
-				{strings.refund}
-			</span>
-		</small>
-	);
+function MoreInfo() {
+	return "";
 }

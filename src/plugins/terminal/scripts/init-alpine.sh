@@ -33,23 +33,44 @@ if [ "$INSTALLING" != true ] && [ $# -gt 0 ] && [ "${1#--}" = "$1" ]; then
     exec "$@"
 fi
 
-required_packages="bash command-not-found tzdata wget"
-missing_packages=""
+if command -v apt-get >/dev/null 2>&1; then
+    required_packages="bash tzdata wget ca-certificates procps"
+    missing_packages=""
 
-for pkg in $required_packages; do
-    if ! apk info -e "$pkg" >/dev/null 2>&1; then
-        missing_packages="$missing_packages $pkg"
-    fi
-done
+    for pkg in $required_packages; do
+        if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+            missing_packages="$missing_packages $pkg"
+        fi
+    done
 
-if [ -n "$missing_packages" ]; then
-    echo -e "\e[34;1m[*] \e[0mInstalling important packages\e[0m"
-    apk update && apk upgrade
-    apk add $missing_packages
-    if [ $? -eq 0 ]; then
-        echo -e "\e[32;1m[+] \e[0mSuccessfully installed\e[0m"
+    if [ -n "$missing_packages" ]; then
+        echo -e "\e[34;1m[*] \e[0mInstalling important Debian packages\e[0m"
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -y && apt-get install -y --no-install-recommends $missing_packages
+        if [ $? -eq 0 ]; then
+            echo -e "\e[32;1m[+] \e[0mSuccessfully installed\e[0m"
+        fi
+        echo -e "\e[34m[*] \e[0mUse \e[32mapt\e[0m to install new packages\e[0m"
     fi
-    echo -e "\e[34m[*] \e[0mUse \e[32mapk\e[0m to install new packages\e[0m"
+elif command -v apk >/dev/null 2>&1; then
+    required_packages="bash command-not-found tzdata wget"
+    missing_packages=""
+
+    for pkg in $required_packages; do
+        if ! apk info -e "$pkg" >/dev/null 2>&1; then
+            missing_packages="$missing_packages $pkg"
+        fi
+    done
+
+    if [ -n "$missing_packages" ]; then
+        echo -e "\e[34;1m[*] \e[0mInstalling important packages\e[0m"
+        apk update && apk upgrade
+        apk add $missing_packages
+        if [ $? -eq 0 ]; then
+            echo -e "\e[32;1m[+] \e[0mSuccessfully installed\e[0m"
+        fi
+        echo -e "\e[34m[*] \e[0mUse \e[32mapk\e[0m to install new packages\e[0m"
+    fi
 fi
 
 
@@ -72,6 +93,21 @@ if [ "$INSTALLING" = true ]; then
 
     mkdir -p "$PREFIX/.configured"
 
+    # Debian APT PRoot fixes
+    if [ -d "/etc/apt" ]; then
+        mkdir -p /etc/apt/apt.conf.d
+        echo 'APT::Sandbox::User "root";' > /etc/apt/apt.conf.d/01sandbox
+        echo 'Acquire::Languages "none";' > /etc/apt/apt.conf.d/02nocache
+    fi
+
+    # Ensure /etc/resolv.conf and /etc/hosts
+    if [ ! -s /etc/resolv.conf ]; then
+        echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" > /etc/resolv.conf
+    fi
+    if [ ! -f /etc/hosts ]; then
+        echo -e "127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback" > /etc/hosts
+    fi
+
     if [ ! -f "$HOME/.bashrc" ]; then
        touch "$HOME/.bashrc" && chmod 644 "$HOME/.bashrc"
     fi
@@ -85,8 +121,22 @@ fi
     echo "$$" > "$PREFIX/pid"
     chmod +x "$PREFIX/axs"
 
-    if [ ! -e "$PREFIX/alpine/etc/acode_motd" ]; then
-        cat <<EOF > "$PREFIX/alpine/etc/acode_motd"
+    MOTD_FILE="$PREFIX/alpine/etc/acode_motd"
+    if [ ! -e "$MOTD_FILE" ]; then
+        if [ -f "/etc/debian_version" ] || command -v apt-get >/dev/null 2>&1; then
+            cat <<EOF > "$MOTD_FILE"
+Welcome to Debian in Acode!
+
+Working with packages:
+
+ - Search:    apt-cache search <query>
+ - Install:   apt install <package>
+ - Uninstall: apt remove <package>
+ - Upgrade:   apt update && apt upgrade
+
+EOF
+        else
+            cat <<EOF > "$MOTD_FILE"
 Welcome to Alpine Linux in Acode!
 
 Working with packages:
@@ -97,6 +147,7 @@ Working with packages:
  - Upgrade: apk update && apk upgrade
 
 EOF
+        fi
     fi
 
     # Create acode CLI tool
@@ -314,12 +365,17 @@ command_not_found_handle() {
     green="\e[1;32m"
     reset="\e[0m"
 
-    pkg=$(apk search -x "cmd:$cmd" 2>/dev/null | awk -F'-[0-9]' '{print $1}' | head -n 1)
-
-    if [ -n "$pkg" ]; then
-        echo -e "The program '$cmd' is not installed.\nInstall it by executing:\n ${green}apk add $pkg${reset}" >&2
+    if command -v apt-cache >/dev/null 2>&1; then
+        echo -e "The program '$cmd' is not installed.\nInstall it by executing:\n ${green}apt update && apt install <package>${reset}" >&2
+    elif command -v apk >/dev/null 2>&1; then
+        pkg=$(apk search -x "cmd:$cmd" 2>/dev/null | awk -F'-[0-9]' '{print $1}' | head -n 1)
+        if [ -n "$pkg" ]; then
+            echo -e "The program '$cmd' is not installed.\nInstall it by executing:\n ${green}apk add $pkg${reset}" >&2
+        else
+            echo "The program '$cmd' is not installed and no package provides it." >&2
+        fi
     else
-        echo "The program '$cmd' is not installed and no package provides it." >&2
+        echo "The program '$cmd' is not installed." >&2
     fi
 
     return 127

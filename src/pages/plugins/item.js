@@ -96,12 +96,6 @@ export default function Item({
 							)}
 						</div>
 					</div>
-					{price !== null && price !== undefined && price !== 0 ? (
-						<span className="plugin-price">
-							{currencySymbol}
-							{price}
-						</span>
-					) : null}
 					{installed && !updates ? (
 						<span
 							className="plugin-toggle-switch"

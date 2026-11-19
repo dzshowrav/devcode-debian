@@ -145,7 +145,7 @@ export default async function PluginInclude(
 
 			unsupportedEditor = installedPlugin.supported_editor;
 			isSupported = isPluginEditorSupported(unsupportedEditor);
-			isPaid = installedPlugin.price > 0;
+			isPaid = false;
 			$page.settitle(plugin.name);
 			render();
 		}
@@ -179,31 +179,9 @@ export default async function PluginInclude(
 					unsupportedEditor = remotePlugin.supported_editor;
 					isSupported = isPluginEditorSupported(unsupportedEditor);
 
-					if (!Number.parseFloat(remotePlugin.price)) return;
-
-					isPaid = remotePlugin.price > 0;
-					purchased = remotePlugin.owned;
-					price = `${remotePlugin.currencySymbol ?? ""}${remotePlugin.price}`;
-
-					if (
-						helpers.isIapAvailable() &&
-						!purchased &&
-						(await helpers.checkAPIStatus())
-					) {
-						try {
-							[product] = await helpers.promisify(iap.getProducts, [
-								remotePlugin.sku,
-							]);
-							if (product) {
-								const purchase = await getPurchase(product.productId);
-								purchased = !!purchase;
-								price = product.price;
-								purchaseToken = purchase?.purchaseToken;
-							}
-						} catch (error) {
-							helpers.error(error);
-						}
-					}
+					isPaid = false;
+					purchased = false;
+					price = null;
 				}
 			} catch (error) {
 				console.error(error);
@@ -216,7 +194,7 @@ export default async function PluginInclude(
 		render();
 
 		if (installOnRender && !installed) {
-			const $button = $page.get('[data-type="install"], [data-type="buy"]');
+			const $button = $page.get('[data-type="install"]');
 			$button?.click();
 		}
 	} catch (err) {

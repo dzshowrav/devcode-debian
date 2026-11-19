@@ -150,6 +150,7 @@ const Terminal = {
                     axsArchitecture: "arm64",
                     alpineDirectory: "aarch64",
                     alpineFilename: "alpine-minirootfs-3.21.0-aarch64.tar.gz",
+                    debianFilename: "debian-bookworm-aarch64-pd-v4.17.3.tar.xz",
                     hasLibproot32: true
                 },
 
@@ -158,6 +159,7 @@ const Terminal = {
                     axsArchitecture: "armv7",
                     alpineDirectory: "armhf",
                     alpineFilename: "alpine-minirootfs-3.21.0-armhf.tar.gz",
+                    debianFilename: "debian-bookworm-arm-pd-v4.17.3.tar.xz",
                     hasLibproot32: false
                 },
 
@@ -166,6 +168,7 @@ const Terminal = {
                     axsArchitecture: "x86_64",
                     alpineDirectory: "x86_64",
                     alpineFilename: "alpine-minirootfs-3.21.0-x86_64.tar.gz",
+                    debianFilename: "debian-bookworm-x86_64-pd-v4.17.3.tar.xz",
                     hasLibproot32: true
                 }
             };
@@ -300,6 +303,11 @@ const Terminal = {
                 architecture.axsArchitecture
             );
 
+            const debianBaseUrl = "https://github.com/termux/proot-distro/releases/download/v4.17.3/";
+            const debianUrl = architecture.debianFilename
+                ? `${debianBaseUrl}${architecture.debianFilename}`
+                : null;
+
             const alpineUrl = buildUrl(
                 alpineBase,
                 architecture.alpineDirectory,
@@ -307,8 +315,11 @@ const Terminal = {
                 architecture.alpineFilename
             );
 
-                logger("⬇️  Downloading sandbox filesystem...");
-                await downloadFile(alpineUrl, cordova.file.dataDirectory + "alpine.tar.gz", "Sandbox filesystem");
+            const rootfsUrl = debianUrl || alpineUrl;
+            const rootfsArchiveName = debianUrl ? "debian.tar.xz" : "alpine.tar.gz";
+
+                logger("⬇️  Downloading Debian sandbox filesystem...");
+                await downloadFile(rootfsUrl, cordova.file.dataDirectory + rootfsArchiveName, "Sandbox filesystem");
 
                 logger("⬇️  Downloading axs...");
                 await downloadFile(axsUrl, cordova.file.dataDirectory + "axs", "AXS");
@@ -355,12 +366,22 @@ const Terminal = {
 
 
             logger("📦  Extracting sandbox filesystem...");
-            await Executor.execute(`tar --no-same-owner -xf ${filesDir}/alpine.tar.gz -C ${alpineDir}`);
+            const hasDebianArchive = await new Promise((resolve) => {
+                system.fileExists(`${filesDir}/debian.tar.xz`, false, (result) => resolve(result == 1), () => resolve(false));
+            });
+            const rootfsFile = hasDebianArchive ? `${filesDir}/debian.tar.xz` : `${filesDir}/alpine.tar.gz`;
+            await Executor.execute(`tar --no-same-owner -xf ${rootfsFile} -C ${alpineDir}`);
 
             logger("⚙️  Applying basic configuration...");
-            await writeText(`${alpineDir}/etc/resolv.conf`, `nameserver 8.8.4.4 \nnameserver 8.8.8.8`);
+            await writeText(`${alpineDir}/etc/resolv.conf`, "nameserver 8.8.8.8\nnameserver 1.1.1.1\n");
+            await ensureDir(`${alpineDir}/etc/apt/apt.conf.d`).catch(() => {});
+            await writeText(`${alpineDir}/etc/apt/apt.conf.d/01sandbox`, 'APT::Sandbox::User "root";\n').catch(() => {});
+            await writeText(`${alpineDir}/etc/apt/apt.conf.d/02nocache`, 'Acquire::Languages "none";\n').catch(() => {});
+            await writeText(`${alpineDir}/etc/hosts`, "127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n").catch(() => {});
+            await Executor.execute(`ln -sfn ${alpineDir} ${filesDir}/debian`).catch(() => {});
 
             const rmWrapper = await readAsset("rm-wrapper.sh");
+            await Executor.execute(`if [ -f "${alpineDir}/bin/rm" ] && [ ! -f "${alpineDir}/bin/rm.orig" ]; then cp "${alpineDir}/bin/rm" "${alpineDir}/bin/rm.orig"; fi`).catch(() => {});
             await deleteFile(`${alpineDir}/bin/rm`).catch(() => {});
             await writeText(`${alpineDir}/bin/rm`, rmWrapper);
             await setExec(`${alpineDir}/bin/rm`, true);

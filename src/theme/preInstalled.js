@@ -5,21 +5,26 @@ import { apply } from "./list";
 const WHITE = "rgb(255, 255, 255)";
 
 const dark = createBuiltInTheme("Dark", "dark", "free");
-dark.primaryColor = "rgb(35, 39, 42)";
+dark.primaryColor = "rgb(19, 49, 83)";
+dark.darkenedPrimaryColor = "rgb(12, 31, 53)";
 dark.primaryTextColor = "rgb(245, 245, 245)";
-dark.secondaryColor = "rgb(45, 49, 52)";
+dark.secondaryColor = "rgb(27, 55, 65)";
 dark.secondaryTextColor = "rgb(228, 228, 228)";
-dark.activeColor = "rgb(66, 133, 244)";
-dark.linkTextColor = "rgb(138, 180, 248)";
-dark.borderColor = "rgba(188, 188, 188, 0.15)";
+dark.activeColor = "rgb(33, 130, 91)";
+dark.linkTextColor = "rgb(78, 139, 119)";
+dark.borderColor = "rgba(78, 139, 119, 0.25)";
 dark.popupIconColor = "rgb(245, 245, 245)";
-dark.popupBackgroundColor = "rgb(35, 39, 42)";
+dark.popupBackgroundColor = "rgb(19, 49, 83)";
 dark.popupTextColor = "rgb(245, 245, 245)";
-dark.popupActiveColor = "rgb(66, 133, 244)";
+dark.popupActiveColor = "rgb(33, 130, 91)";
+dark.buttonBackgroundColor = "rgb(33, 130, 91)";
+dark.buttonActiveColor = "rgb(30, 94, 88)";
+dark.buttonTextColor = "rgb(255, 255, 255)";
+dark.activeIconColor = "rgb(33, 130, 91)";
 dark.activeTextColor = "rgb(255, 255, 255)";
 dark.errorTextColor = "rgb(255, 185, 92)";
 dark.dangerColor = "rgb(220, 38, 38)";
-dark.scrollbarColor = "rgba(255, 255, 255, 0.2)";
+dark.scrollbarColor = "rgba(33, 130, 91, 0.25)";
 dark.preferredEditorTheme = getSystemEditorTheme(true);
 dark.preferredTerminalTheme = "dark";
 
@@ -248,19 +253,23 @@ export function getSystemEditorTheme(darkTheme) {
 export function updateSystemTheme(darkTheme, applyTheme = true) {
 	if (darkTheme) {
 		system.type = "dark";
-		system.primaryColor = "rgb(35, 39, 42)";
+		system.primaryColor = "rgb(19, 49, 83)";
 		system.primaryTextColor = "rgb(245, 245, 245)";
-		system.darkenedPrimaryColor = "rgb(24, 27, 30)";
-		system.secondaryColor = "rgb(45, 49, 52)";
+		system.darkenedPrimaryColor = "rgb(12, 31, 53)";
+		system.secondaryColor = "rgb(27, 55, 65)";
 		system.secondaryTextColor = "rgb(228, 228, 228)";
-		system.activeColor = "rgb(66, 133, 244)";
-		system.linkTextColor = "rgb(138, 180, 248)";
-		system.borderColor = "rgba(188, 188, 188, 0.15)";
+		system.activeColor = "rgb(33, 130, 91)";
+		system.linkTextColor = "rgb(78, 139, 119)";
+		system.borderColor = "rgba(78, 139, 119, 0.25)";
 		system.popupIconColor = "rgb(245, 245, 245)";
 
-		system.popupBackgroundColor = "rgb(35, 39, 42)";
+		system.popupBackgroundColor = "rgb(19, 49, 83)";
 		system.popupTextColor = "rgb(245, 245, 245)";
-		system.popupActiveColor = "rgb(66, 133, 244)";
+		system.popupActiveColor = "rgb(33, 130, 91)";
+		system.buttonBackgroundColor = "rgb(33, 130, 91)";
+		system.buttonActiveColor = "rgb(30, 94, 88)";
+		system.buttonTextColor = "rgb(255, 255, 255)";
+		system.activeIconColor = "rgb(33, 130, 91)";
 	} else {
 		system.type = "light";
 		system.primaryColor = "rgb(255, 255, 255)";

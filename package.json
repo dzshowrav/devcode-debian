@@ -1,8 +1,8 @@
 {
   "name": "com.foxdebug.acode",
-  "displayName": "Acode",
+  "displayName": "DEV CODE",
   "version": "1.13.5",
-  "description": "Acode is a code editor for android",
+  "description": "DEV CODE is a powerful code editor for Android",
   "scripts": {
     "lang": "node ./utils/lang.js",
     "build": "sh utils/scripts/build.sh",

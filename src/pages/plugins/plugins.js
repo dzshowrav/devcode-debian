@@ -38,12 +38,10 @@ export default function PluginsInclude(updates) {
 	const $list = {
 		all: <List />,
 		installed: <List />,
-		owned: <List />,
 	};
 	const plugins = {
 		all: [],
 		installed: [],
-		owned: [],
 	};
 	let $currList = $list.installed;
 	let currSection = "installed";
@@ -217,9 +215,6 @@ export default function PluginsInclude(updates) {
 				<span id="all_plugins" onclick={renderAll} tabindex="0">
 					{strings.all}
 				</span>
-				<span id="owned_plugins" onclick={renderOwned} tabindex="0">
-					{strings.owned}
-				</span>
 			</div>
 			{$list.installed}
 		</TabView>
@@ -276,7 +271,6 @@ export default function PluginsInclude(updates) {
 
 	if (navigator.onLine) {
 		getAllPlugins();
-		getOwned();
 	}
 
 	getInstalledPlugins().then(() => {
@@ -370,7 +364,10 @@ export default function PluginsInclude(updates) {
 			const response = await fetch(
 				withSupportedEditor(`${config.API_BASE}/plugins?name=${query}`),
 			);
-			const plugins = await response.json();
+			const rawResults = await response.json();
+			const plugins = Array.isArray(rawResults)
+				? rawResults.filter((plugin) => !plugin.price || Number(plugin.price) <= 0)
+				: [];
 			// Map the plugins to Item elements and return
 			return plugins.map((plugin) => <Item {...plugin} />);
 		} catch (error) {
@@ -465,10 +462,13 @@ export default function PluginsInclude(updates) {
 						),
 					);
 				}
-				const items = await response.json();
-				if (!Array.isArray(items)) {
+				const rawItems = await response.json();
+				if (!Array.isArray(rawItems)) {
 					return { items: [], hasMore: false };
 				}
+				const items = rawItems.filter(
+					(plugin) => !plugin.price || Number(plugin.price) <= 0,
+				);
 				filterState.nextPage = page + 1;
 				const hasMoreResults = items.length === LIMIT;
 				return { items, hasMore: hasMoreResults };
@@ -541,6 +541,7 @@ export default function PluginsInclude(updates) {
 
 	function matchesFilter(plugin, filterState) {
 		if (!plugin) return false;
+		if (plugin.price && Number(plugin.price) > 0) return false;
 
 		switch (filterState.type) {
 			case "verified":
@@ -608,7 +609,10 @@ export default function PluginsInclude(updates) {
 					`${config.API_BASE}/plugins?page=${currentPage}&limit=${LIMIT}`,
 				),
 			);
-			const newPlugins = await response.json();
+			const rawPlugins = await response.json();
+			const newPlugins = Array.isArray(rawPlugins)
+				? rawPlugins.filter((plugin) => !plugin.price || Number(plugin.price) <= 0)
+				: [];
 
 			if (newPlugins.length < LIMIT) {
 				hasMore = false;
@@ -669,60 +673,7 @@ export default function PluginsInclude(updates) {
 		$list.installed.setAttribute("empty-msg", strings["no plugins found"]);
 	}
 
-	async function getOwned() {
-		$list.owned.setAttribute("empty-msg", strings["loading..."]);
-
-		let iapPurchases = [];
-		if (helpers.isIapAvailable()) {
-			iapPurchases = await helpers.promisify(iap.getPurchases);
-			const disabledMap = settings.value.pluginsDisabled || {};
-
-			iapPurchases.forEach(async ({ productIds }) => {
-				const [sku] = productIds;
-				const url = Url.join(config.API_BASE, "plugin/owned", sku);
-				const plugin = await fsOperation(url).readFile("json");
-
-				plugins.owned.push(plugin);
-			});
-		} else if (!(await auth.getLoggedInUser())) {
-			console.log("Not logged in");
-			$list.owned.setAttribute("empty-msg", strings["login-to-view"]);
-			return;
-		}
-
-		try {
-			const res = await fetch(`${config.API_BASE}/plugins?owned=true`);
-			if (res.ok) {
-				const ownedPlugins = await res.json();
-				if (Array.isArray(ownedPlugins)) {
-					ownedPlugins.forEach((plugin) => {
-						if (
-							!iapPurchases.find(({ productIds }) =>
-								productIds.includes(plugin.sku),
-							)
-						) {
-							plugins.owned.push(plugin);
-						}
-					});
-				}
-			}
-		} catch (error) {}
-
-		for (const plugin of plugins.owned) {
-			plugin.installed = Boolean(
-				plugins.installed.find(({ id }) => id === plugin.id),
-			);
-
-			if (plugin.installed) {
-				plugin.enabled = disabledMap[plugin.id] !== true;
-				plugin.onToggleEnabled = onToggleEnabled;
-			}
-
-			$list.owned.append(<Item {...plugin} updates={updates} />);
-		}
-
-		$list.owned.setAttribute("empty-msg", strings["no plugins found"]);
-	}
+	async function getOwned() {}
 
 	function onInstall(plugin) {
 		if (updates) return;
