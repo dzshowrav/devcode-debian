@@ -50,8 +50,8 @@ if command -v apt-get >/dev/null 2>&1; then
         if [ $? -eq 0 ]; then
             echo -e "\e[32;1m[+] \e[0mSuccessfully installed\e[0m"
         fi
-        echo -e "\e[34m[*] \e[0mUse \e[32mapt\e[0m to install new packages\e[0m"
     fi
+    echo -e "\e[34m[*] \e[0mUse \e[32mapt\e[0m to install new packages\e[0m"
 elif command -v apk >/dev/null 2>&1; then
     required_packages="bash command-not-found tzdata wget"
     missing_packages=""
@@ -125,7 +125,7 @@ fi
     if [ ! -e "$MOTD_FILE" ]; then
         if [ -f "/etc/debian_version" ] || command -v apt-get >/dev/null 2>&1; then
             cat <<EOF > "$MOTD_FILE"
-Welcome to Debian in Acode!
+Welcome to Debian in DEV CODE!
 
 Working with packages:
 
@@ -137,7 +137,7 @@ Working with packages:
 EOF
         else
             cat <<EOF > "$MOTD_FILE"
-Welcome to Alpine Linux in Acode!
+Welcome to Alpine Linux in DEV CODE!
 
 Working with packages:
 
@@ -229,6 +229,7 @@ for arg in "$@"; do
 done
 ACODE_CLI
         chmod +x "$PREFIX/alpine/usr/local/bin/acode"
+        ln -sf "$PREFIX/alpine/usr/local/bin/acode" "$PREFIX/alpine/usr/local/bin/devcode"
     fi
 
     # Create initrc if it doesn't exist

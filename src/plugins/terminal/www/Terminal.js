@@ -179,147 +179,123 @@ const Terminal = {
                 throw new Error(`Unsupported architecture: ${arch}`);
             }
 
-            if(isFdroid === "true") {
-                const buildUrl = (...parts) => parts.join("");
-
-
-            const strings = {
-                protocol: ["ht", "tps", ":", "//"],
-
-                rawGithubDomain: [
-                    "raw",
-                    ".",
-                    "github",
-                    "usercontent",
-                    ".",
-                    "com"
-                ],
-
-                githubDomain: [
-                    "git",
-                    "hub",
-                    ".",
-                    "com"
-                ],
-
-                alpineDomain: [
-                    "dl",
-                    "-",
-                    "cdn",
-                    ".",
-                    "alpine",
-                    "linux",
-                    ".",
-                    "org"
-                ],
-
-                acodeFoundation: [
-                    "Acode",
-                    "-",
-                    "Foundation"
-                ],
-
-                acodeRepo: [
-                    "A",
-                    "code"
-                ],
-
-                bajrangCoder: [
-                    "bajrang",
-                    "Coder"
-                ],
-
-                acodexServer: [
-                    "acodex",
-                    "_",
-                    "server"
-                ],
-
-                libraries: {
-                    proot: ["li", "bp", "root", ".", "so"],
-                    proot32: ["li", "bp", "root", "32", ".", "so"],
-                    talloc: ["li", "bt", "alloc", ".", "so"],
-                    prootXed: ["li", "bp", "root", "-", "xed", ".", "so"]
-                }
-            };
-
-            const rawGithubBase = buildUrl(
-                ...strings.protocol,
-                ...strings.rawGithubDomain,
-                "/",
-                ...strings.acodeFoundation,
-                "/",
-                ...strings.acodeRepo,
-                "/main/src/plugins/proot/libs/"
-            );
-
-            const githubReleaseBase = buildUrl(
-                ...strings.protocol,
-                ...strings.githubDomain,
-                "/",
-                ...strings.bajrangCoder,
-                "/",
-                ...strings.acodexServer,
-                "/releases/latest/download/"
-            );
-
-            const alpineBase = buildUrl(
-                ...strings.protocol,
-                ...strings.alpineDomain,
-                "/alpine/v3.21/releases/"
-            );
-
-            const libraryBaseUrl = buildUrl(
-                rawGithubBase,
-                architecture.libraryDirectory,
-                "/"
-            );
-
-            const libproot = buildUrl(
-                libraryBaseUrl,
-                ...strings.libraries.proot
-            );
-
-            const libTalloc = buildUrl(
-                libraryBaseUrl,
-                ...strings.libraries.talloc
-            );
-
-            const prootUrl = buildUrl(
-                libraryBaseUrl,
-                ...strings.libraries.prootXed
-            );
-
-            const libproot32 = architecture.hasLibproot32
-                ? buildUrl(
-                    libraryBaseUrl,
-                    ...strings.libraries.proot32
-                )
-                : null;
-
-            const axsUrl = buildUrl(
-                githubReleaseBase,
-                "axs-pie-android-",
-                architecture.axsArchitecture
-            );
-
             const debianBaseUrl = "https://github.com/termux/proot-distro/releases/download/v4.17.3/";
             const debianUrl = architecture.debianFilename
                 ? `${debianBaseUrl}${architecture.debianFilename}`
                 : null;
 
-            const alpineUrl = buildUrl(
-                alpineBase,
-                architecture.alpineDirectory,
-                "/",
-                architecture.alpineFilename
-            );
+            if (!debianUrl) {
+                throw new Error(`Unsupported architecture for Debian: ${arch}`);
+            }
 
-            const rootfsUrl = debianUrl || alpineUrl;
-            const rootfsArchiveName = debianUrl ? "debian.tar.xz" : "alpine.tar.gz";
+            if (isFdroid === "true") {
+                const buildUrl = (...parts) => parts.join("");
+
+                const strings = {
+                    protocol: ["ht", "tps", ":", "//"],
+
+                    rawGithubDomain: [
+                        "raw",
+                        ".",
+                        "github",
+                        "usercontent",
+                        ".",
+                        "com"
+                    ],
+
+                    githubDomain: [
+                        "git",
+                        "hub",
+                        ".",
+                        "com"
+                    ],
+
+                    acodeFoundation: [
+                        "Acode",
+                        "-",
+                        "Foundation"
+                    ],
+
+                    acodeRepo: [
+                        "A",
+                        "code"
+                    ],
+
+                    bajrangCoder: [
+                        "bajrang",
+                        "Coder"
+                    ],
+
+                    acodexServer: [
+                        "acodex",
+                        "_",
+                        "server"
+                    ],
+
+                    libraries: {
+                        proot: ["li", "bp", "root", ".", "so"],
+                        proot32: ["li", "bp", "root", "32", ".", "so"],
+                        talloc: ["li", "bt", "alloc", ".", "so"],
+                        prootXed: ["li", "bp", "root", "-", "xed", ".", "so"]
+                    }
+                };
+
+                const rawGithubBase = buildUrl(
+                    ...strings.protocol,
+                    ...strings.rawGithubDomain,
+                    "/",
+                    ...strings.acodeFoundation,
+                    "/",
+                    ...strings.acodeRepo,
+                    "/main/src/plugins/proot/libs/"
+                );
+
+                const githubReleaseBase = buildUrl(
+                    ...strings.protocol,
+                    ...strings.githubDomain,
+                    "/",
+                    ...strings.bajrangCoder,
+                    "/",
+                    ...strings.acodexServer,
+                    "/releases/latest/download/"
+                );
+
+                const libraryBaseUrl = buildUrl(
+                    rawGithubBase,
+                    architecture.libraryDirectory,
+                    "/"
+                );
+
+                const libproot = buildUrl(
+                    libraryBaseUrl,
+                    ...strings.libraries.proot
+                );
+
+                const libTalloc = buildUrl(
+                    libraryBaseUrl,
+                    ...strings.libraries.talloc
+                );
+
+                const prootUrl = buildUrl(
+                    libraryBaseUrl,
+                    ...strings.libraries.prootXed
+                );
+
+                const libproot32 = architecture.hasLibproot32
+                    ? buildUrl(
+                        libraryBaseUrl,
+                        ...strings.libraries.proot32
+                    )
+                    : null;
+
+                const axsUrl = buildUrl(
+                    githubReleaseBase,
+                    "axs-pie-android-",
+                    architecture.axsArchitecture
+                );
 
                 logger("⬇️  Downloading Debian sandbox filesystem...");
-                await downloadFile(rootfsUrl, cordova.file.dataDirectory + rootfsArchiveName, "Sandbox filesystem");
+                await downloadFile(debianUrl, cordova.file.dataDirectory + "debian.tar.xz", "Debian sandbox filesystem");
 
                 logger("⬇️  Downloading axs...");
                 await downloadFile(axsUrl, cordova.file.dataDirectory + "axs", "AXS");
@@ -339,22 +315,16 @@ const Terminal = {
                 }
 
                 logger("✅  All downloads completed");
-            }else{
-                logger("📦  Extracting assets...");
-                await new Promise((resolve, reject) => {
-                    system.extractAsset(`alpine_assets/${architecture.libraryDirectory}/alpine.rootfs`, `${filesDir}/alpine.tar.gz`, resolve, (e)=>{
-                        console.error(`Failed to extract alpine.tar.gz: ${formatError(e)}`);
-                        reject(e);
-                    });
-                });
+            } else {
+                logger("⬇️  Downloading Debian sandbox filesystem...");
+                await downloadFile(debianUrl, cordova.file.dataDirectory + "debian.tar.xz", "Debian sandbox filesystem");
 
-                try{
-                    await Executor.execute("rm -f $PREFIX/axs && ln -s $NATIVE_DIR/libaxs.so $PREFIX/axs")
-                }catch(e){
+                try {
+                    await Executor.execute("rm -f $PREFIX/axs && ln -s $NATIVE_DIR/libaxs.so $PREFIX/axs");
+                } catch(e) {
                     err_logger(`${formatError(e)}`);
                 }
             }
-           
 
             logger("📁  Setting up directories...");
 
@@ -364,13 +334,19 @@ const Terminal = {
 
             await ensureDir(alpineDir);
 
+            logger("📦  Extracting Debian sandbox filesystem...");
+            await Executor.execute(`tar --no-same-owner -xf ${filesDir}/debian.tar.xz -C ${alpineDir} || tar -xf ${filesDir}/debian.tar.xz -C ${alpineDir}`);
 
-            logger("📦  Extracting sandbox filesystem...");
-            const hasDebianArchive = await new Promise((resolve) => {
-                system.fileExists(`${filesDir}/debian.tar.xz`, false, (result) => resolve(result == 1), () => resolve(false));
-            });
-            const rootfsFile = hasDebianArchive ? `${filesDir}/debian.tar.xz` : `${filesDir}/alpine.tar.gz`;
-            await Executor.execute(`tar --no-same-owner -xf ${rootfsFile} -C ${alpineDir}`);
+            // Flatten extracted debian-bookworm-* directory directly into alpineDir
+            await Executor.execute(`
+                sub_dir=$(ls -d "${alpineDir}"/debian-bookworm-* 2>/dev/null | head -n 1)
+                if [ -n "$sub_dir" ] && [ -d "$sub_dir" ]; then
+                    for f in "$sub_dir"/* "$sub_dir"/.[!.]* "$sub_dir"/..?*; do
+                        [ -e "$f" ] && mv "$f" "${alpineDir}/" 2>/dev/null || true
+                    done
+                    rmdir "$sub_dir" 2>/dev/null || rm -rf "$sub_dir" 2>/dev/null || true
+                fi
+            `);
 
             logger("⚙️  Applying basic configuration...");
             await writeText(`${alpineDir}/etc/resolv.conf`, "nameserver 8.8.8.8\nnameserver 1.1.1.1\n");
@@ -389,7 +365,7 @@ const Terminal = {
             logger("✅  Extraction complete");
             await ensureDir(`${filesDir}/.extracted`);
 
-            logger("⚙️  Updating sandbox enviroment...");
+            logger("⚙️  Updating sandbox environment...");
             const installResult = await this.startAxs(true, logger, err_logger);
             if (!installResult) {
                 throw new Error(this.lastInstallError || "Sandbox configuration failed.");

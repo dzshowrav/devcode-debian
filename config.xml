@@ -41,6 +41,12 @@
         <preference name="android-targetSdkVersion" value="36" />
         <preference name="android-minSdkVersion" value="26" />
 
+        <icon density="mdpi" src="res/android/mipmap-mdpi/ic_launcher.webp" />
+        <icon density="hdpi" src="res/android/mipmap-hdpi/ic_launcher.webp" />
+        <icon density="xhdpi" src="res/android/mipmap-xhdpi/ic_launcher.webp" />
+        <icon density="xxhdpi" src="res/android/mipmap-xxhdpi/ic_launcher.webp" />
+        <icon density="xxxhdpi" src="res/android/mipmap-xxxhdpi/ic_launcher.webp" />
+
 
         <edit-config file="app/src/main/AndroidManifest.xml" mode="merge"
             target="/manifest/application">
