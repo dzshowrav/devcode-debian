@@ -398,9 +398,9 @@ export default {
 			"com.android.externalstorage.documents",
 		);
 		const isTermuxUri = currentUri.includes("com.termux.documents");
-		const isAcodeTerminalPublicSafUri = currentUri.includes(
-			"com.foxdebug.acode.documents",
-		);
+		const isAcodeTerminalPublicSafUri =
+			currentUri.includes("com.devcode.app.documents") ||
+			currentUri.includes("com.foxdebug.acode.documents");
 		const [, treeSegment = ""] = currentUri.split("/tree/");
 		const terminalBasePath = isAcodeTerminalPublicSafUri
 			? decodeURIComponent(treeSegment.split("::")[0] || "")
