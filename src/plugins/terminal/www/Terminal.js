@@ -335,22 +335,27 @@ const Terminal = {
             await ensureDir(alpineDir);
 
             logger("📦  Extracting Debian sandbox filesystem...");
-            await Executor.execute(`tar --no-same-owner -xf ${filesDir}/debian.tar.xz -C ${alpineDir} || tar -xf ${filesDir}/debian.tar.xz -C ${alpineDir}`);
+            await Executor.execute(`tar --exclude="dev" --exclude="./dev" --exclude="*/dev/*" -xf ${filesDir}/debian.tar.xz -C ${alpineDir} || tar -xf ${filesDir}/debian.tar.xz -C ${alpineDir} || true`);
 
             // Flatten extracted debian-bookworm-* directory directly into alpineDir
             await Executor.execute(`
-                sub_dir=$(ls -d "${alpineDir}"/debian-bookworm-* 2>/dev/null | head -n 1)
-                if [ -n "$sub_dir" ] && [ -d "$sub_dir" ]; then
-                    for f in "$sub_dir"/* "$sub_dir"/.[!.]* "$sub_dir"/..?*; do
-                        [ -e "$f" ] && mv "$f" "${alpineDir}/" 2>/dev/null || true
-                    done
-                    rmdir "$sub_dir" 2>/dev/null || rm -rf "$sub_dir" 2>/dev/null || true
-                fi
+                for sub in "${alpineDir}"/debian-bookworm-*; do
+                    if [ -d "$sub" ]; then
+                        for item in "$sub"/* "$sub"/.[!.]* "$sub"/..?*; do
+                            if [ -e "$item" ] || [ -L "$item" ]; then
+                                mv -f "$item" "${alpineDir}/" 2>/dev/null || cp -a "$item" "${alpineDir}/" 2>/dev/null || true
+                                rm -rf "$item" 2>/dev/null || true
+                            fi
+                        done
+                        rmdir "$sub" 2>/dev/null || rm -rf "$sub" 2>/dev/null || true
+                    fi
+                done
             `);
 
             logger("⚙️  Applying basic configuration...");
-            await writeText(`${alpineDir}/etc/resolv.conf`, "nameserver 8.8.8.8\nnameserver 1.1.1.1\n");
+            await ensureDir(`${alpineDir}/etc`).catch(() => {});
             await ensureDir(`${alpineDir}/etc/apt/apt.conf.d`).catch(() => {});
+            await writeText(`${alpineDir}/etc/resolv.conf`, "nameserver 8.8.8.8\nnameserver 1.1.1.1\n").catch(() => {});
             await writeText(`${alpineDir}/etc/apt/apt.conf.d/01sandbox`, 'APT::Sandbox::User "root";\n').catch(() => {});
             await writeText(`${alpineDir}/etc/apt/apt.conf.d/02nocache`, 'Acquire::Languages "none";\n').catch(() => {});
             await writeText(`${alpineDir}/etc/hosts`, "127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n").catch(() => {});
